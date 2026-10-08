@@ -136,22 +136,111 @@ export const getLabelsPDF = async (req, res) => {
 
 export const getCashRegistersPDF = async (req, res) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM cash_registers WHERE DATE(opened_at) = CURRENT_DATE');
-        const doc = new PDFDocument();
+        const { registerId } = req.query;
+        const registerQuery = registerId
+            ? 'SELECT * FROM cash_registers WHERE id = $1'
+            : 'SELECT * FROM cash_registers WHERE DATE(opened_at) = CURRENT_DATE ORDER BY opened_at ASC';
+        const registerParams = registerId ? [registerId] : [];
+        const { rows } = await pool.query(registerQuery, registerParams);
+
+        const doc = new PDFDocument({ margin: 50 });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=cierres_caja.pdf`);
+        res.setHeader('Content-Disposition', `inline; filename=cierres_caja.pdf`);
         doc.pipe(res);
-        doc.fontSize(20).text(`Cierres de Caja del Dia`, { align: 'center' });
+
+        const formatUsd = (value) => `$${parseFloat(value || 0).toFixed(2)}`;
+        const formatVes = (value) => `Bs. ${parseFloat(value || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const methodLabel = (method) => ({
+            EFECTIVO: 'Efectivo',
+            PAGO_MOVIL: 'Pago Movil',
+            PUNTO_VENTA: 'Punto de Venta / Tarjeta',
+            CREDITO: 'Credito (Fiar)'
+        })[method] || method || 'Sin metodo';
+
+        doc.fontSize(20).text(registerId ? `Cierre de Caja #${registerId}` : 'Cierres de Caja del Dia', { align: 'center' });
+        doc.fontSize(10).text(`Generado: ${new Date().toLocaleString('es-VE')}`, { align: 'center' });
         doc.moveDown();
+
         if (rows.length === 0) {
             doc.fontSize(12).text('No hay registros de cajas abiertas/cerradas hoy.', { align: 'center' });
         } else {
-            rows.forEach(r => {
-                doc.fontSize(12).text(`Caja #${r.id} - Inicial: $${r.initial_balance} - Estado: ${r.status}`);
-            });
+            for (const register of rows) {
+                const openedAt = register.opened_at;
+                const closedAt = register.closed_at || new Date();
+
+                const salesSummary = await pool.query(`
+                    SELECT payment_method,
+                           COUNT(*) AS tickets,
+                           COALESCE(SUM(total_usd), 0) AS total_usd,
+                           COALESCE(SUM(total_ves), 0) AS total_ves,
+                           COALESCE(AVG(exchange_rate), 0) AS exchange_rate
+                    FROM sales
+                    WHERE created_at >= $1 AND created_at <= $2
+                    GROUP BY payment_method
+                    ORDER BY payment_method ASC
+                `, [openedAt, closedAt]);
+
+                const totals = salesSummary.rows.reduce((acc, row) => {
+                    acc.tickets += parseInt(row.tickets, 10);
+                    acc.usd += parseFloat(row.total_usd || 0);
+                    acc.ves += parseFloat(row.total_ves || 0);
+                    return acc;
+                }, { tickets: 0, usd: 0, ves: 0 });
+
+                doc.fontSize(14).font('Helvetica-Bold').text(`Caja #${register.id}`);
+                doc.fontSize(10).font('Helvetica')
+                    .text(`Estado: ${register.status === 'OPEN' ? 'Abierta' : 'Cerrada'}`)
+                    .text(`Apertura: ${new Date(register.opened_at).toLocaleString('es-VE')}`)
+                    .text(`Cierre: ${register.closed_at ? new Date(register.closed_at).toLocaleString('es-VE') : 'En curso'}`)
+                    .text(`Fondo inicial: ${formatUsd(register.opening_balance_usd)} / ${formatVes(register.opening_balance_ves)}`);
+                doc.moveDown();
+
+                doc.fontSize(11).font('Helvetica-Bold');
+                const headerY = doc.y;
+                doc.text('Metodo de pago', 50, headerY, { width: 170 });
+                doc.text('Tickets', 225, headerY, { width: 60, align: 'right' });
+                doc.text('Total USD', 310, headerY, { width: 90, align: 'right' });
+                doc.text('Total Bs.', 430, headerY, { width: 110, align: 'right' });
+                doc.y = headerY + 15;
+                doc.moveDown(0.4);
+                doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+                doc.moveDown(0.5);
+
+                doc.font('Helvetica');
+                if (salesSummary.rows.length === 0) {
+                    doc.text('No hubo ventas en esta caja.');
+                } else {
+                    salesSummary.rows.forEach(row => {
+                        const y = doc.y;
+                        doc.text(methodLabel(row.payment_method), 50, y, { width: 170 });
+                        doc.text(row.tickets.toString(), 225, y, { width: 60, align: 'right' });
+                        doc.text(formatUsd(row.total_usd), 310, y, { width: 90, align: 'right' });
+                        doc.text(formatVes(row.total_ves), 430, y, { width: 110, align: 'right' });
+                        doc.moveDown(0.7);
+                    });
+                }
+
+                doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+                doc.moveDown(0.5);
+                doc.font('Helvetica-Bold');
+                const y = doc.y;
+                doc.text('Total vendido', 50, y, { width: 170 });
+                doc.text(totals.tickets.toString(), 225, y, { width: 60, align: 'right' });
+                doc.text(formatUsd(totals.usd), 310, y, { width: 90, align: 'right' });
+                doc.text(formatVes(totals.ves), 430, y, { width: 110, align: 'right' });
+
+                doc.moveDown();
+                doc.fontSize(11).text(`Monto final esperado: ${formatUsd(register.closing_balance_usd)} / ${formatVes(register.closing_balance_ves)}`);
+                doc.moveDown(2);
+
+                if (!registerId && rows.indexOf(register) < rows.length - 1) {
+                    doc.addPage();
+                }
+            }
         }
         doc.end();
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Error' });
     }
 };

@@ -6,6 +6,7 @@ export default {
             <div style="display: flex; align-items: center; gap: 15px;">
                 <span id="caja-status-text" style="color: var(--text-secondary); font-size: 1.1em;">Cargando estado de caja...</span>
                 <button class="btn-outline" id="btn-ir-caja" style="display: none;">Ir a Caja / Venta</button>
+                <button class="btn-primary" id="btn-cerrar-caja" style="display: none; background: var(--danger);">Cerrar caja</button>
             </div>
             <div id="caja-status-indicator"></div>
         </div>
@@ -34,8 +35,10 @@ export default {
     afterRender: async () => {
         const statusText = document.getElementById('caja-status-text');
         const btnIrCaja = document.getElementById('btn-ir-caja');
+        const btnCerrarCaja = document.getElementById('btn-cerrar-caja');
         const indicator = document.getElementById('caja-status-indicator');
         const tableBody = document.getElementById('cajas-table');
+        let openRegisterId = null;
 
         btnIrCaja.addEventListener('click', () => {
             window.history.pushState(null, '', '/venta');
@@ -49,14 +52,18 @@ export default {
             if (res.ok) {
                 const data = await res.json();
                 if (data.isOpen) {
+                    openRegisterId = data.register.id;
                     statusText.textContent = 'Tienes una caja abierta actualmente.';
                     statusText.style.color = 'var(--text-primary)';
                     btnIrCaja.style.display = 'inline-block';
+                    btnCerrarCaja.style.display = 'inline-block';
                     btnIrCaja.textContent = 'Ir a la Caja (Punto de Venta)';
                     indicator.innerHTML = '<span style="background: rgba(16, 185, 129, 0.15); color: var(--accent-color); padding: 6px 12px; border-radius: 20px; font-weight: bold;">Caja Abierta</span>';
                 } else {
+                    openRegisterId = null;
                     statusText.textContent = 'No tienes ninguna caja abierta.';
                     btnIrCaja.style.display = 'inline-block';
+                    btnCerrarCaja.style.display = 'none';
                     btnIrCaja.textContent = 'Abrir Caja Nueva';
                     btnIrCaja.className = 'btn-primary'; // Highlight since they need to open one
                     indicator.innerHTML = '<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 6px 12px; border-radius: 20px; font-weight: bold;">Caja Cerrada</span>';
@@ -65,6 +72,26 @@ export default {
         } catch(e) {
             statusText.textContent = 'Error de conexión con la caja.';
         }
+
+        btnCerrarCaja.addEventListener('click', async () => {
+            if (!confirm('Seguro que quieres cerrar la caja y generar el PDF del cierre?')) return;
+
+            try {
+                const res = await fetch('/api/registers/close', { method: 'POST' });
+                const result = await res.json();
+
+                if (res.ok) {
+                    const registerId = result.registerId || openRegisterId;
+                    window.open(`/api/reports/cajas-pdf?registerId=${registerId}`, '_blank');
+                    window.history.pushState(null, '', '/cajas');
+                    window.dispatchEvent(new Event('popstate'));
+                } else {
+                    alert(result.error || 'Error al cerrar la caja');
+                }
+            } catch (e) {
+                alert('Error de conexion al cerrar la caja');
+            }
+        });
 
         // Get History
         try {

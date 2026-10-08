@@ -15,7 +15,8 @@ export const getRegisterStatus = async (req, res) => {
 
 export const openRegister = async (req, res) => {
     try {
-        const { openingUsd, openingVes } = req.body;
+        const openingUsd = req.body.openingUsd ?? req.body.opening_balance_usd ?? 0;
+        const openingVes = req.body.openingVes ?? req.body.opening_balance_ves ?? 0;
         
         const current = await pool.query(`SELECT id FROM cash_registers WHERE status = 'OPEN' LIMIT 1`);
         if (current.rows.length > 0) {
@@ -64,6 +65,7 @@ export const closeRegister = async (req, res) => {
         
         res.json({ 
             message: 'Caja cerrada y cuadre completado', 
+            registerId,
             report: {
                 totalSalesUsd,
                 totalSalesVes,
