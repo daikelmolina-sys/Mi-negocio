@@ -198,7 +198,8 @@ export default {
                 category: document.getElementById('prod-category').value,
                 cost_usd: document.getElementById('prod-cost').value,
                 price_usd: document.getElementById('prod-price').value,
-                stock: document.getElementById('prod-stock').value
+                stock: document.getElementById('prod-stock').value,
+                username: window.currentUser ? window.currentUser.username : 'Sistema'
             };
 
             try {

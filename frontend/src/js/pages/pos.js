@@ -8,7 +8,7 @@ export default {
                 padding-top: 15px;
             }
             .product-card {
-                background: white;
+                background: var(--panel-bg);
                 border: 1px solid var(--border-color);
                 border-radius: 8px;
                 padding: 15px;
@@ -22,7 +22,7 @@ export default {
             }
             .product-card:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.2);
                 border-color: var(--accent-color);
             }
             .product-card.out-of-stock {
@@ -65,15 +65,15 @@ export default {
             </div>
         </div>
 
-        <div id="pos-main" style="display: none; height: calc(100vh - 80px);">
+        <div id="pos-main" style="display: none; height: calc(100vh - 100px);">
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; height: 100%;">
                 
                 <!-- Left side: Products -->
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column; min-height: 0;">
                     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                         <input type="text" id="pos-search" class="input-control" placeholder="Buscar producto o escanear código de barras..." style="flex: 1; font-size: 1.1em; padding: 15px;">
                     </div>
-                    <div class="panel" style="flex: 1; overflow-y: auto;">
+                    <div class="panel" style="flex: 1; overflow-y: auto; padding-top: 0; min-height: 0;">
                         <div id="pos-products" class="product-grid">
                             <p style="color: var(--text-secondary); grid-column: 1 / -1; text-align: center; margin-top: 50px;">Cargando productos...</p>
                         </div>
@@ -81,10 +81,10 @@ export default {
                 </div>
 
                 <!-- Right side: Cart -->
-                <div class="panel" style="display: flex; flex-direction: column; margin-bottom: 0;">
+                <div class="panel" style="display: flex; flex-direction: column; margin-bottom: 0; min-height: 0;">
                     <h2 style="font-family: var(--font-sans); font-size: 1.2em; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">Ticket de Venta</h2>
                     
-                    <div id="pos-cart" style="flex: 1; overflow-y: auto;">
+                    <div id="pos-cart" style="flex: 1; overflow-y: auto; min-height: 0;">
                         <p style="color: var(--text-secondary); text-align: center; font-size: 0.9em; margin-top: 20px;">El carrito está vacío</p>
                     </div>
 
@@ -365,6 +365,7 @@ export default {
                 exchange_rate: exchangeRate,
                 payment_method: method,
                 client_id: clientId,
+                username: window.currentUser ? window.currentUser.username : 'Sistema',
                 items: cart.map(i => ({
                     product_id: i.id,
                     quantity: i.qty,

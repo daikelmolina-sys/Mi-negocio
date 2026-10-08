@@ -46,21 +46,36 @@ export const bulkUpload = async (req, res) => {
                 }
 
                 if (existingProduct) {
-                    // Si ya existe, SUMAMOS el stock y actualizamos precio/costo
+                    // Si ya existe, REEMPLAZAMOS el stock y actualizamos precio/costo
                     await client.query(`
                         UPDATE products 
-                        SET price_usd = $1, cost_usd = $2, stock = stock + $3, category = $4
+                        SET price_usd = $1, cost_usd = $2, stock = $3, category = $4
                         WHERE id = $5
                     `, [price, cost, stock, category, existingProduct.id]);
+                    
+                    const diff = stock - existingProduct.stock;
+                    if (diff !== 0) {
+                        const type = diff > 0 ? 'Entrada (Excel)' : 'Salida (Excel)';
+                        await client.query(`
+                            INSERT INTO inventory_movements (product_id, type, quantity, stock_after, username, note)
+                            VALUES ($1, $2, $3, $4, $5, $6)
+                        `, [existingProduct.id, type, Math.abs(diff), stock, 'Sistema', 'Actualización masiva Excel']);
+                    }
                 } else {
                     // Si es totalmente nuevo, lo insertamos
                     if (!barcode) {
                         barcode = `GEN-${Date.now()}-${index}`;
                     }
-                    await client.query(`
+                    const insertRes = await client.query(`
                         INSERT INTO products (barcode, name, price_usd, cost_usd, stock, category)
                         VALUES ($1, $2, $3, $4, $5, $6)
+                        RETURNING id
                     `, [barcode, name, price, cost, stock, category]);
+
+                    await client.query(`
+                        INSERT INTO inventory_movements (product_id, type, quantity, stock_after, username, note)
+                        VALUES ($1, 'Entrada (Excel)', $2, $3, $4, $5)
+                    `, [insertRes.rows[0].id, stock, stock, 'Sistema', 'Creación por Excel']);
                 }
 
                 imported++;
@@ -127,13 +142,21 @@ export const getProducts = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        const { barcode, name, description, category, price_usd, cost_usd, stock } = req.body;
+        const { barcode, name, description, category, price_usd, cost_usd, stock, username } = req.body;
         const result = await pool.query(`
             INSERT INTO products (barcode, name, description, category, price_usd, cost_usd, stock)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `, [barcode || null, name, description || '', category || '', price_usd || 0, cost_usd || 0, stock || 0]);
-        res.status(201).json(result.rows[0]);
+        
+        const newProduct = result.rows[0];
+        
+        await pool.query(`
+            INSERT INTO inventory_movements (product_id, type, quantity, stock_after, username, note)
+            VALUES ($1, 'Entrada (Creación)', $2, $3, $4, $5)
+        `, [newProduct.id, newProduct.stock, newProduct.stock, username || 'Sistema', 'Producto nuevo']);
+
+        res.status(201).json(newProduct);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error creando producto' });
@@ -143,7 +166,13 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { barcode, name, description, category, price_usd, cost_usd, stock } = req.body;
+        const { barcode, name, description, category, price_usd, cost_usd, stock, username } = req.body;
+        
+        // Fetch current stock to calculate difference
+        const currentRes = await pool.query('SELECT stock FROM products WHERE id = $1', [id]);
+        if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+        const currentStock = currentRes.rows[0].stock;
+        
         const result = await pool.query(`
             UPDATE products 
             SET barcode = $1, name = $2, description = $3, category = $4, price_usd = $5, cost_usd = $6, stock = $7
@@ -151,8 +180,18 @@ export const updateProduct = async (req, res) => {
             RETURNING *
         `, [barcode || null, name, description || '', category || '', price_usd || 0, cost_usd || 0, stock || 0, id]);
         
-        if(result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
-        res.json(result.rows[0]);
+        const updatedProduct = result.rows[0];
+        
+        const diff = updatedProduct.stock - currentStock;
+        if (diff !== 0) {
+            const type = diff > 0 ? 'Entrada (Ajuste)' : 'Salida (Ajuste)';
+            await pool.query(`
+                INSERT INTO inventory_movements (product_id, type, quantity, stock_after, username, note)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [updatedProduct.id, type, Math.abs(diff), updatedProduct.stock, username || 'Sistema', 'Ajuste manual de stock']);
+        }
+
+        res.json(updatedProduct);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error actualizando producto' });
@@ -166,9 +205,25 @@ export const deleteProduct = async (req, res) => {
         res.json({ message: 'Producto eliminado correctamente' });
     } catch (error) {
         if (error.code === '23503') { // foreign key violation code in PG
-            return res.status(400).json({ error: 'No puedes eliminar un producto que ya tiene ventas registradas en el sistema.' });
+            return res.status(400).json({ error: 'No puedes eliminar un producto que ya tiene ventas o movimientos registrados en el sistema.' });
         }
         console.error(error);
         res.status(500).json({ error: 'Error eliminando producto' });
+    }
+};
+
+export const getMovements = async (req, res) => {
+    try {
+        const movements = await pool.query(`
+            SELECT m.*, p.name as product_name
+            FROM inventory_movements m
+            JOIN products p ON m.product_id = p.id
+            ORDER BY m.created_at DESC
+            LIMIT 50
+        `);
+        res.json(movements.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error obteniendo movimientos' });
     }
 };

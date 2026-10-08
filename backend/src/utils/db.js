@@ -88,6 +88,17 @@ export const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS inventory_movements (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(id),
+        type VARCHAR(20) NOT NULL,
+        quantity DECIMAL(10, 2) NOT NULL,
+        stock_after DECIMAL(10, 2) NOT NULL,
+        username VARCHAR(50) DEFAULT 'Sistema',
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       INSERT INTO settings (exchange_rate) 
       SELECT 36.5 
       WHERE NOT EXISTS (SELECT 1 FROM settings);

@@ -29,7 +29,7 @@ export const getProductsSearch = async (req, res) => {
 export const createSale = async (req, res) => {
     const client = await pool.connect();
     try {
-        const { items, payment_method, exchange_rate, total_usd, total_ves, client_id } = req.body;
+        const { items, payment_method, exchange_rate, total_usd, total_ves, client_id, username } = req.body;
         
         await client.query('BEGIN');
 
@@ -66,9 +66,16 @@ export const createSale = async (req, res) => {
                 [saleId, item.product_id, item.quantity, item.price_usd, item.quantity * item.price_usd]
             );
 
-            await client.query(
-                `UPDATE products SET stock = stock - $1 WHERE id = $2`,
+            const updateResult = await client.query(
+                `UPDATE products SET stock = stock - $1 WHERE id = $2 RETURNING stock`,
                 [item.quantity, item.product_id]
+            );
+            const stockAfter = updateResult.rows[0].stock;
+
+            await client.query(
+                `INSERT INTO inventory_movements (product_id, type, quantity, stock_after, username, note)
+                 VALUES ($1, 'Salida (Venta)', $2, $3, $4, $5)`,
+                [item.product_id, item.quantity, stockAfter, username || 'Sistema', `Venta #${saleId}`]
             );
         }
 
