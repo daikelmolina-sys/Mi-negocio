@@ -187,3 +187,39 @@ td {
     border-bottom: 1px solid var(--border-color);
     font-size: 0.95em;
 }
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--panel-bg);
+    padding: 30px;
+    border-radius: 12px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-modal {
+    font-size: 1.5em;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.close-modal:hover { color: var(--danger); }

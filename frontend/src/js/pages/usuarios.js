@@ -58,6 +58,7 @@ export default {
                             <button type="button" class="btn-outline" onclick="window.closeUsuarioModal()">Cancelar</button>
                             <button type="submit" class="btn-primary">Guardar Usuario</button>
                         </div>
+                        <p id="usuario-error" style="color: var(--danger); margin-top: 15px; text-align: center; display: none;"></p>
                     </form>
                 </div>
             </div>
@@ -160,6 +161,9 @@ export default {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const errorEl = document.getElementById('usuario-error');
+            errorEl.style.display = 'none';
+
             const id = document.getElementById('user-id').value;
             const payload = {
                 username: document.getElementById('user-username').value,
@@ -184,10 +188,12 @@ export default {
                     loadUsuarios();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Error al guardar');
+                    errorEl.textContent = data.error || 'Error al guardar';
+                    errorEl.style.display = 'block';
                 }
             } catch (error) {
-                alert('Error de red');
+                errorEl.textContent = 'Error de red';
+                errorEl.style.display = 'block';
             }
         });
 
