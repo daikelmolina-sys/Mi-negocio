@@ -85,7 +85,7 @@ export default {
 
         const loadCredits = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/credits');
+                const res = await fetch('/api/credits');
                 if(res.ok) {
                     const credits = await res.json();
                     
@@ -144,7 +144,7 @@ export default {
 
         const processPayment = async (id, amount) => {
             try {
-                const res = await fetch(`http://localhost:3000/api/credits/${id}/pay`, {
+                const res = await fetch(`/api/credits/${id}/pay`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ amount_usd: amount })
@@ -188,7 +188,7 @@ export default {
             };
 
             try {
-                const res = await fetch('http://localhost:3000/api/credits/client', {
+                const res = await fetch('/api/credits/client', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)

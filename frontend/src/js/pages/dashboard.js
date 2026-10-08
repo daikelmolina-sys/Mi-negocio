@@ -34,7 +34,7 @@ export default {
     `,
     afterRender: async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/inventory/stats');
+            const res = await fetch('/api/inventory/stats');
             if (res.ok) {
                 const data = await res.json();
                 

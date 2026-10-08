@@ -72,7 +72,7 @@ export default {
 
         const loadUsuarios = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/users');
+                const res = await fetch('/api/users');
                 if(!res.ok) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">Acceso Denegado o Error de red</td></tr>';
                     return;
@@ -146,7 +146,7 @@ export default {
         window.deleteUsuario = async (id) => {
             if(confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
                 try {
-                    const res = await fetch(`http://localhost:3000/api/users/${id}`, { method: 'DELETE' });
+                    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
                     if(res.ok) {
                         loadUsuarios();
                     } else {
@@ -174,7 +174,7 @@ export default {
             if (pwd) payload.password = pwd;
 
             try {
-                const url = id ? `http://localhost:3000/api/users/${id}` : 'http://localhost:3000/api/users';
+                const url = id ? `/api/users/${id}` : '/api/users';
                 const method = id ? 'PUT' : 'POST';
                 
                 const res = await fetch(url, {

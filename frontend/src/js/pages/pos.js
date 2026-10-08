@@ -164,7 +164,7 @@ export default {
 
         // Fetch settings for exchange rate
         try {
-            const res = await fetch('http://localhost:3000/api/settings');
+            const res = await fetch('/api/settings');
             if (res.ok) {
                 const data = await res.json();
                 exchangeRate = parseFloat(data.exchange_rate) || 1;
@@ -175,7 +175,7 @@ export default {
         // Fetch clients
         const loadClients = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/credits/clients');
+                const res = await fetch('/api/credits/clients');
                 if (res.ok) {
                     const clients = await res.json();
                     checkoutClient.innerHTML = '<option value="">-- Seleccione un cliente --</option>' + 
@@ -286,7 +286,7 @@ export default {
 
         const loadProducts = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/inventory');
+                const res = await fetch('/api/inventory');
                 if (res.ok) {
                     products = await res.json();
                     renderProducts();
@@ -306,7 +306,7 @@ export default {
 
         // Check register status
         try {
-            const res = await fetch('http://localhost:3000/api/registers/status');
+            const res = await fetch('/api/registers/status');
             if (res.ok) {
                 const data = await res.json();
                 if (data.isOpen) initPOS();
@@ -317,7 +317,7 @@ export default {
             btnAbrir.addEventListener('click', async () => {
                 const amount = inputEfectivo.value || 0;
                 try {
-                    const res = await fetch('http://localhost:3000/api/registers/open', {
+                    const res = await fetch('/api/registers/open', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ opening_balance_usd: amount })
@@ -373,7 +373,7 @@ export default {
             };
 
             try {
-                const res = await fetch('http://localhost:3000/api/sales', {
+                const res = await fetch('/api/sales', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(saleData)

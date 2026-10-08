@@ -29,13 +29,13 @@ export default {
 
         if (btnSql) {
             btnSql.addEventListener('click', () => {
-                window.location.href = 'http://localhost:3000/api/settings/backup';
+                window.location.href = '/api/settings/backup';
             });
         }
 
         if (btnExcel) {
             btnExcel.addEventListener('click', () => {
-                window.location.href = 'http://localhost:3000/api/settings/excel';
+                window.location.href = '/api/settings/excel';
             });
         }
 
@@ -56,7 +56,7 @@ export default {
                 formData.append('file', file);
 
                 try {
-                    const response = await fetch('http://localhost:3000/api/settings/restore', {
+                    const response = await fetch('/api/settings/restore', {
                         method: 'POST',
                         body: formData
                     });

@@ -15,7 +15,7 @@ export const initAuth = async () => {
         if (!token) return false;
 
         try {
-            const res = await fetch('http://localhost:3000/api/auth/verify', {
+            const res = await fetch('/api/auth/verify', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -65,7 +65,7 @@ export const initAuth = async () => {
         loginError.style.display = 'none';
 
         try {
-            const res = await fetch('http://localhost:3000/api/auth/login', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })

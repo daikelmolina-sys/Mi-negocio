@@ -101,7 +101,7 @@ export default {
 
         const loadProducts = async (search = '') => {
             try {
-                const res = await fetch(`http://localhost:3000/api/inventory?search=${encodeURIComponent(search)}`);
+                const res = await fetch(`/api/inventory?search=${encodeURIComponent(search)}`);
                 if (res.ok) {
                     currentProducts = await res.json();
                     badge.textContent = `Total: ${currentProducts.length}`;
@@ -149,7 +149,7 @@ export default {
                             if(confirm('¿Estás totalmente seguro de eliminar este producto del inventario?')) {
                                 const id = e.target.getAttribute('data-id');
                                 try {
-                                    const delRes = await fetch(`http://localhost:3000/api/inventory/${id}`, { method: 'DELETE' });
+                                    const delRes = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
                                     if(delRes.ok) {
                                         loadProducts(searchInput.value); // reload table
                                     } else {
@@ -205,14 +205,14 @@ export default {
                 let res;
                 if(id) {
                     // Update
-                    res = await fetch(`http://localhost:3000/api/inventory/${id}`, {
+                    res = await fetch(`/api/inventory/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(productData)
                     });
                 } else {
                     // Create
-                    res = await fetch('http://localhost:3000/api/inventory', {
+                    res = await fetch('/api/inventory', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(productData)
@@ -242,7 +242,7 @@ export default {
                 formData.append('file', file);
 
                 try {
-                    const response = await fetch('http://localhost:3000/api/inventory/bulk-upload', {
+                    const response = await fetch('/api/inventory/bulk-upload', {
                         method: 'POST',
                         body: formData
                     });

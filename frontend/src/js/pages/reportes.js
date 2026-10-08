@@ -47,7 +47,7 @@ export default {
     afterRender: async () => {
         // Load categories into dropdown
         try {
-            const res = await fetch('http://localhost:3000/api/inventory');
+            const res = await fetch('/api/inventory');
             if(res.ok) {
                 const products = await res.json();
                 const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
@@ -64,22 +64,22 @@ export default {
         const getCat = () => document.getElementById('select-category').value;
 
         document.getElementById('btn-rep-costos')?.addEventListener('click', () => {
-            window.open('http://localhost:3000/api/reports/costos-pdf', '_blank');
+            window.open('/api/reports/costos-pdf', '_blank');
         });
         document.getElementById('btn-rep-excel')?.addEventListener('click', () => {
-            window.open('http://localhost:3000/api/reports/inventario-excel', '_blank');
+            window.open('/api/reports/inventario-excel', '_blank');
         });
         document.getElementById('btn-rep-diario')?.addEventListener('click', () => {
-            window.open('http://localhost:3000/api/reports/diario-pdf', '_blank');
+            window.open('/api/reports/diario-pdf', '_blank');
         });
         document.getElementById('btn-rep-cajas')?.addEventListener('click', () => {
-            window.open('http://localhost:3000/api/reports/cajas-pdf', '_blank');
+            window.open('/api/reports/cajas-pdf', '_blank');
         });
         document.getElementById('btn-rep-categoria')?.addEventListener('click', () => {
-            window.open(`http://localhost:3000/api/reports/categoria-pdf?category=${encodeURIComponent(getCat())}`, '_blank');
+            window.open(`/api/reports/categoria-pdf?category=${encodeURIComponent(getCat())}`, '_blank');
         });
         document.getElementById('btn-rep-etiquetas')?.addEventListener('click', () => {
-            window.open(`http://localhost:3000/api/reports/etiquetas-pdf?category=${encodeURIComponent(getCat())}`, '_blank');
+            window.open(`/api/reports/etiquetas-pdf?category=${encodeURIComponent(getCat())}`, '_blank');
         });
 
         const periodButtons = document.querySelectorAll('#period-buttons button');
@@ -89,7 +89,7 @@ export default {
             document.getElementById('rep-promedio').textContent = '...';
             
             try {
-                const res = await fetch(`http://localhost:3000/api/sales/stats?period=${period}`);
+                const res = await fetch(`/api/sales/stats?period=${period}`);
                 if (res.ok) {
                     const data = await res.json();
                     const formatMoney = (val) => '$' + parseFloat(val).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});

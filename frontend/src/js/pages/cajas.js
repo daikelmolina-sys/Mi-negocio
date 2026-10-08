@@ -45,7 +45,7 @@ export default {
 
         // Get Status
         try {
-            const res = await fetch('http://localhost:3000/api/registers/status');
+            const res = await fetch('/api/registers/status');
             if (res.ok) {
                 const data = await res.json();
                 if (data.isOpen) {
@@ -68,7 +68,7 @@ export default {
 
         // Get History
         try {
-            const res = await fetch('http://localhost:3000/api/registers/history');
+            const res = await fetch('/api/registers/history');
             if (res.ok) {
                 const registers = await res.json();
                 if (registers.length === 0) {

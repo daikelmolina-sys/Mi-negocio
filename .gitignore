@@ -3,3 +3,5 @@ postgres_data/
 .env
 .DS_Store
 *.log
+
+Manual_de_Usuario.md

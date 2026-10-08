@@ -66,7 +66,7 @@ export default {
 
         // Load exchange rate
         try {
-            const res = await fetch('http://localhost:3000/api/settings');
+            const res = await fetch('/api/settings');
             if (res.ok) {
                 const data = await res.json();
                 const rate = parseFloat(data.exchange_rate);
@@ -82,7 +82,7 @@ export default {
             if(isNaN(newRate) || newRate < 0) return alert('Tasa inválida');
 
             try {
-                const res = await fetch('http://localhost:3000/api/settings/rate', {
+                const res = await fetch('/api/settings/rate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ exchange_rate: newRate })

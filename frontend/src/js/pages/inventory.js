@@ -61,7 +61,7 @@ export default {
 
         // Load Stats
         try {
-            const resStats = await fetch('http://localhost:3000/api/inventory/stats');
+            const resStats = await fetch('/api/inventory/stats');
             if(resStats.ok) {
                 const stats = await resStats.json();
                 document.getElementById('inv-total-productos').textContent = stats.total_productos || 0;
@@ -73,7 +73,7 @@ export default {
 
         // Load Products
         try {
-            const resProd = await fetch('http://localhost:3000/api/inventory');
+            const resProd = await fetch('/api/inventory');
             if (resProd.ok) {
                 const products = await resProd.json();
                 if(products.length === 0) {
