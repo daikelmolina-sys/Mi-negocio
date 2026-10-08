@@ -99,6 +99,32 @@ export const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS bulk_imports (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        mode VARCHAR(20) NOT NULL DEFAULT 'replace',
+        imported_count INTEGER DEFAULT 0,
+        errors_count INTEGER DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'ACTIVE',
+        username VARCHAR(50) DEFAULT 'Sistema',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        rolled_back_at TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS bulk_import_items (
+        id SERIAL PRIMARY KEY,
+        import_id INTEGER REFERENCES bulk_imports(id) ON DELETE CASCADE,
+        product_id INTEGER REFERENCES products(id),
+        barcode VARCHAR(100),
+        product_name VARCHAR(255) NOT NULL,
+        previous_stock DECIMAL(10, 2),
+        new_stock DECIMAL(10, 2) NOT NULL,
+        quantity_applied DECIMAL(10, 2) NOT NULL,
+        product_was_created BOOLEAN DEFAULT FALSE,
+        movement_id INTEGER REFERENCES inventory_movements(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       INSERT INTO settings (exchange_rate) 
       SELECT 36.5 
       WHERE NOT EXISTS (SELECT 1 FROM settings);

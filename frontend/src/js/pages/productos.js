@@ -14,12 +14,40 @@ export default {
             <h3 style="font-family: var(--font-sans); font-size: 1.1em; margin-bottom: 10px;">Carga de Productos</h3>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">Agrega productos manualmente o utiliza la herramienta de importación para cargar toda tu base de datos desde un archivo Excel (.xlsx).</p>
             
-            <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                 <button class="btn-primary" id="btn-add-product-first">+ Agregar mi primer producto</button>
+                <select class="input-control" id="bulk-mode" style="width: 220px;">
+                    <option value="add">Sumar al stock existente</option>
+                    <option value="replace">Reemplazar stock actual</option>
+                </select>
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" style="display: none;">
                 <button class="btn-outline" onclick="document.getElementById('excel-upload').click()">📥 Importar desde Excel</button>
                 <span id="upload-status" style="font-weight: 500; font-size: 0.9em;"></span>
             </div>
+        </div>
+
+        <div class="panel" style="padding: 0; overflow-x: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border-color);">
+                <h3 style="font-family: var(--font-sans); font-size: 1.1em; margin: 0;">Historial de cargas masivas</h3>
+                <button class="btn-outline" id="btn-refresh-imports" style="padding: 6px 10px; font-size: 0.85em;">Actualizar</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Archivo</th>
+                        <th>Modo</th>
+                        <th>Productos</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody id="bulk-imports-table">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-secondary);">Cargando historial...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="panel" style="padding: 0; overflow-x: auto;">
@@ -89,6 +117,9 @@ export default {
         const tableBody = document.getElementById('products-table');
         const searchInput = document.getElementById('search-products');
         const badge = document.getElementById('total-products-badge');
+        const bulkMode = document.getElementById('bulk-mode');
+        const bulkImportsTable = document.getElementById('bulk-imports-table');
+        const btnRefreshImports = document.getElementById('btn-refresh-imports');
 
         const modal = document.getElementById('modal-product');
         const form = document.getElementById('form-product');
@@ -169,7 +200,74 @@ export default {
             }
         };
 
+        const loadBulkImports = async () => {
+            try {
+                const res = await fetch('/api/inventory/bulk-imports');
+                if (!res.ok) throw new Error('No se pudo cargar el historial');
+                const imports = await res.json();
+
+                if (imports.length === 0) {
+                    bulkImportsTable.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-secondary);">Todavia no hay cargas masivas.</td></tr>';
+                    return;
+                }
+
+                bulkImportsTable.innerHTML = imports.map(item => {
+                    const isActive = item.status === 'ACTIVE';
+                    const modeText = item.mode === 'add' ? 'Sumar stock' : 'Reemplazar stock';
+                    const statusText = isActive ? 'Activa' : 'Deshecha';
+                    const date = new Date(item.created_at).toLocaleString();
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${item.filename}</td>
+                            <td>${modeText}</td>
+                            <td>${item.imported_count}</td>
+                            <td><span style="color: ${isActive ? 'var(--success)' : 'var(--text-secondary)'}; font-weight: 600;">${statusText}</span></td>
+                            <td style="color: var(--text-secondary);">${date}</td>
+                            <td>
+                                ${isActive ? `<button class="btn-outline btn-rollback-import" data-id="${item.id}" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 4px 8px; font-size: 0.8em;">Deshacer</button>` : '-'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.querySelectorAll('.btn-rollback-import').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = e.target.getAttribute('data-id');
+                        if (!confirm('Seguro que quieres deshacer esta carga masiva?')) return;
+
+                        try {
+                            const rollbackRes = await fetch(`/api/inventory/bulk-imports/${id}/rollback`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: window.currentUser ? window.currentUser.username : 'Sistema' })
+                            });
+                            const result = await rollbackRes.json();
+
+                            if (rollbackRes.ok) {
+                                statusEl.style.color = 'var(--success)';
+                                statusEl.textContent = result.message;
+                                loadProducts(searchInput.value);
+                                loadBulkImports();
+                            } else {
+                                statusEl.style.color = 'var(--danger)';
+                                statusEl.textContent = result.error || 'No se pudo deshacer la carga';
+                            }
+                        } catch (err) {
+                            statusEl.style.color = 'var(--danger)';
+                            statusEl.textContent = 'Error de conexion al deshacer';
+                        }
+                    });
+                });
+            } catch (e) {
+                console.error(e);
+                bulkImportsTable.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--danger);">Error cargando historial.</td></tr>';
+            }
+        };
+
         loadProducts();
+        loadBulkImports();
+        if (btnRefreshImports) btnRefreshImports.addEventListener('click', loadBulkImports);
 
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
@@ -241,6 +339,8 @@ export default {
 
                 const formData = new FormData();
                 formData.append('file', file);
+                formData.append('mode', bulkMode ? bulkMode.value : 'add');
+                formData.append('username', window.currentUser ? window.currentUser.username : 'Sistema');
 
                 try {
                     const response = await fetch('/api/inventory/bulk-upload', {
@@ -252,8 +352,9 @@ export default {
 
                     if(response.ok) {
                         statusEl.style.color = 'var(--success)';
-                        statusEl.textContent = '¡Éxito! Productos importados/actualizados correctamente.';
+                        statusEl.textContent = `Exito: ${result.imported} productos procesados.`;
                         loadProducts();
+                        loadBulkImports();
                     } else {
                         statusEl.style.color = 'var(--danger)';
                         statusEl.textContent = 'Error: ' + result.error;
