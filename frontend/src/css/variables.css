@@ -1,4 +1,5 @@
 :root {
+    color-scheme: light;
     --bg-color: #f7f7f8;
     --sidebar-bg: #ffffff;
     --panel-bg: #ffffff;
@@ -14,6 +15,7 @@
 }
 
 [data-theme="dark"] {
+    color-scheme: dark;
     --bg-color: #0f172a;
     --sidebar-bg: #1e293b;
     --panel-bg: #1e293b;
