@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Negocio</title>
+    <link rel="stylesheet" href="/src/css/variables.css">
+    <link rel="stylesheet" href="/src/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="panel" style="width: 100%; max-width: 400px; padding: 40px; text-align: center;">
+            <h2 style="margin-bottom: 30px; font-size: 1.8em; color: var(--accent-color);">Mi Negocio</h2>
+            <form id="form-login">
+                <div class="input-group" style="text-align: left;">
+                    <label>Usuario</label>
+                    <input type="text" id="login-username" class="input-control" required>
+                </div>
+                <div class="input-group" style="text-align: left; margin-top: 15px;">
+                    <label>Contraseña</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="login-password" class="input-control" style="width: 100%; padding-right: 40px;" required>
+                        <button type="button" onclick="toggleLoginPassword()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em; color: #666; padding: 0;">👁️</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 25px; padding: 12px; font-size: 1.1em;">Iniciar Sesión</button>
+            </form>
+            <p id="login-error" style="color: var(--danger); margin-top: 15px; display: none;"></p>
+        </div>
+    </div>
+
+    <div class="app-container" id="main-app" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                Mi Negocio
+            </div>
+            
+            <nav id="sidebar-nav">
+                <a href="/" data-link id="nav-inicio">
+                    <span style="font-size: 1.2em;">⌂</span> Inicio
+                </a>
+                <a href="/venta" data-link id="nav-venta">
+                    <span style="font-size: 1.2em;">◉</span> Venta
+                </a>
+                <a href="/productos" data-link id="nav-productos">
+                    <span style="font-size: 1.2em;">☰</span> Productos
+                </a>
+                <a href="/inventario" data-link id="nav-inventario">
+                    <span style="font-size: 1.2em;">≡</span> Inventario
+                </a>
+                <a href="/reportes" data-link id="nav-reportes">
+                    <span style="font-size: 1.2em;">◔</span> Reportes
+                </a>
+                <a href="/creditos" data-link id="nav-creditos">
+                    <span style="font-size: 1.2em;">◈</span> Créditos
+                </a>
+                <a href="/cajas" data-link id="nav-cajas">
+                    <span style="font-size: 1.2em;">▣</span> Cajas
+                </a>
+                <a href="/usuarios" data-link id="nav-usuarios">
+                    <span style="font-size: 1.2em;">☺</span> Usuarios
+                </a>
+                <a href="/ajustes" data-link id="nav-ajustes">
+                    <span style="font-size: 1.2em;">⚙</span> Ajustes
+                </a>
+                <a href="/respaldo" data-link id="nav-respaldo">
+                    <span style="font-size: 1.2em;">↓</span> Respaldo
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <strong>Local</strong>
+                Administrador maestro<br>
+                Modo local (sin base de datos)
+                
+                <button id="theme-toggle" class="btn-outline" style="width: 100%; margin-top: 15px; padding: 8px; font-size: 0.9em; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
+                </button>
+                <button id="btn-logout" class="btn-outline" style="width: 100%; margin-top: 10px; padding: 8px; font-size: 0.9em; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="app">
+            <!-- Content will be dynamically rendered here by the router -->
+        </main>
+    </div>
+
+    <script type="module" src="/src/js/app.js"></script>
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const btnLogout = document.getElementById('btn-logout');
+        
+        if(btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                if(window.logout) window.logout();
+            });
+        }
+        
+        function toggleLoginPassword() {
+            const pwdInput = document.getElementById('login-password');
+            const btn = pwdInput.nextElementSibling;
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                pwdInput.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
+        
+        const currentTheme = localStorage.getItem('theme') || 'light';
+
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('theme-icon').textContent = '☀️';
+            document.getElementById('theme-text').textContent = 'Modo Claro';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('theme-icon').textContent = '🌙';
+                document.getElementById('theme-text').textContent = 'Modo Oscuro';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('theme-icon').textContent = '☀️';
+                document.getElementById('theme-text').textContent = 'Modo Claro';
+            }
+        });
+    </script>
+</body>
+</html>
